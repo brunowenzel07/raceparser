@@ -97,7 +97,7 @@
   <ItemGroup>
     <Compile Include="Config\ConfigValues.cs" />
     <Compile Include="Log.cs" />
-    <Compile Include="Model\DBGateway.cs" />
+    <Compile Include="Model\_DBAccess\DBGateway.cs" />
     <Compile Include="Model\Meeting.cs" />
     <Compile Include="Model\RaceOdds.cs" />
     <Compile Include="Model\Race.cs" />
@@ -111,7 +111,6 @@
     <Compile Include="Parsers\Parser.cs" />
     <Compile Include="Parsers\ParserPool.cs" />
     <Compile Include="Config\ParserSection.cs" />
-    <Compile Include="Parsers\RaceStatus.cs" />
     <Compile Include="ProjectInstaller.cs">
       <SubType>Component</SubType>
     </Compile>
