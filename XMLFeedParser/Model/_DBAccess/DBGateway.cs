@@ -61,8 +61,13 @@ namespace XMLFeedParser.Model
         }
 
 
-        internal static void SetUpdateTime(string countryCode)
+        internal static void SetUpdateTime(List<Race> races)
         {
+            var dtRaces = new DataTable();
+            dtRaces.Columns.Add("MeetingId", typeof(int));
+            dtRaces.Columns.Add("RaceNumber", typeof(int));
+            races.ToList().ForEach(r => dtRaces.Rows.Add(r.MeetingId, r.RaceNumber));
+            
             using (var conn = new SqlConnection(ConfigValues.ConnectionString))
             {
                 conn.Open();
@@ -72,8 +77,9 @@ namespace XMLFeedParser.Model
                     command.CommandType = CommandType.StoredProcedure;
 
                     SqlParameter param1;
-                    param1 = command.Parameters.AddWithValue("@countryCode", countryCode);
-                    param1.SqlDbType = SqlDbType.VarChar;
+                    param1 = command.Parameters.AddWithValue("@races", dtRaces);
+                    param1.SqlDbType = SqlDbType.Structured;
+                    param1.TypeName = "RaceUpdateType";
 
                     command.ExecuteNonQuery();
                 }

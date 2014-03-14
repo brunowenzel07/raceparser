@@ -97,7 +97,7 @@ namespace XMLFeedParser.Parsers
                 updateRaces(meetings, races, runners, odds);
 
                 //store the update time in DB to synchronize with the web app
-                DBGateway.SetUpdateTime(CountryCode);
+                DBGateway.SetUpdateTime(races);
             }
             catch (Exception e)
             {
