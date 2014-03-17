@@ -87,6 +87,7 @@ namespace XMLFeedParser.Parsers
             List<Runner> runners = null;
             List<RaceOdds> odds = null;
 
+            Exception ex = null;
             bool parsed = false;
             try
             {
@@ -102,6 +103,8 @@ namespace XMLFeedParser.Parsers
             catch (Exception e)
             {
                 Log.Instance.ErrorException(Name + ": failed to " + (parsed ? "update" : "parse") + " races", e);
+                racesToRefresh.ToList().ForEach(memRace => memRace.numErrors++);
+                ex = e;
             }
 
 
@@ -113,15 +116,10 @@ namespace XMLFeedParser.Parsers
                 var rc = races == null ? null : races.FirstOrDefault(r =>
                     r.MeetingId == memRace.MeetingId && r.RaceNumber == memRace.RaceNumber);
 
-
                 //if it couldn't be retrieved, we'll add delay til its next retrieval
                 if (rc == null)
                 {
                     memRace.numErrors++;
-                    //after 10 errors, an email is sent to the administrator
-                    if (memRace.numErrors == ConfigValues.NumErrorsToSendEmail ||
-                        memRace.numErrors == ConfigValues.NumErrorsToSendEmail2)
-                        racesToNotify.Add(memRace);
                 }
                 else
                 {
@@ -137,10 +135,15 @@ namespace XMLFeedParser.Parsers
                         memRace.FinishingTimeUTC = rc.RaceJumpTimeUTC.AddSeconds(-ConfigValues.FinishingBeforeJumpTime);
                     }
                 }
+
+                //after 10 errors, an email is sent to the administrator
+                if (memRace.numErrors == ConfigValues.NumErrorsToSendEmail ||
+                    memRace.numErrors == ConfigValues.NumErrorsToSendEmail2)
+                    racesToNotify.Add(memRace);
             });
 
             if (racesToNotify.Count > 0)
-                sendErrorEmail(racesToNotify);
+                sendErrorEmail(racesToNotify, ex);
         }
 
 
@@ -210,6 +213,8 @@ namespace XMLFeedParser.Parsers
                 //race codes are assumed to have been preloaded in DB
                 var dbMeetings = DBGateway.GetUpcomingMeetings(CountryCode).ToList();
 
+                Log.Instance.Debug(Name + ": Retrieved "+ dbMeetings.Count() + " upcoming meetings");
+
                 dbMeetings.ForEach(db =>
                 {
                     var memMeeting = racesStatus.FirstOrDefault(mem => mem.MeetingId == db.MeetingId);
@@ -275,7 +280,7 @@ namespace XMLFeedParser.Parsers
         }
 
 
-        private void sendErrorEmail(List<RaceStatus> racesToNotify)
+        private void sendErrorEmail(List<RaceStatus> racesToNotify, Exception ex)
         {
             try
             {
@@ -289,11 +294,16 @@ namespace XMLFeedParser.Parsers
                     {
                         msg.AppendFormat("<li>MeetingDate: {0}<br/>MeetingId: {1}<br/>RaceNo: {2}<br/>MeetingCode: {3}<br/>AUS_StateId: {4}</li>", 
                             r.DateUTC.ToShortDateString(), r.MeetingId, r.RaceNumber, 
-                            r.MeetingCode ?? "NULL!!!", 
-                            r.AUS_StateId != 0 ? r.AUS_StateId.ToString() : "0!!!");
+                            r.MeetingCode ?? "<b>NULL <===</b>", 
+                            r.AUS_StateId != 0 ? r.AUS_StateId.ToString() : "<b>0 <===</b>");
                     });
 
-                msg.Append("</ul><p>Can you please have a look?</p><p>Thanks!</p>");
+                msg.Append("</ul>");
+
+                if (ex != null)
+                    msg.AppendFormat("<p>The application raised the following exception:</p><p>{0}</p>", ex.ToString());
+
+                msg.Append("<p>Can you please have a look?</p><p>Thanks!</p>");
 
 
                 var mail = new System.Net.Mail.MailMessage();
