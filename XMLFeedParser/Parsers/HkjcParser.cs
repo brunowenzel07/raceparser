@@ -14,7 +14,7 @@ namespace XMLFeedParser.Parsers
     class HkjcParser : Parser
     {
         //TODO check when the data is available on wednesday and sundays
-        protected override void parseRaces(IEnumerable<Parser.RaceStatus> racesToRetrieve, 
+        protected override void parseRaces(IEnumerable<RaceStatus> racesToRetrieve, 
             out List<Meeting> _meetings, out List<Race> _races, out List<Runner> _runners, out List<RaceOdds> _odds)
         {
             //var meetings = new List<Meeting>();
@@ -66,7 +66,6 @@ namespace XMLFeedParser.Parsers
                                 var indexPla = content.IndexOf("#PLA");
 
                                 var winChunks = content.Substring(indexWin, indexPla - indexWin).Split(';');
-
                                 for (int i = 0; i < winChunks.Length; i++)
                                 {
                                     RunnerHKG runner = new RunnerHKG();
@@ -80,7 +79,7 @@ namespace XMLFeedParser.Parsers
                                         runner.HorseNumber = int.Parse(smallChunks[0]); //runner no
                                         if (smallChunks[1] != "SCR")
                                         {
-                                            runner.WinOdds = double.Parse(smallChunks[1], CultureInfo.InvariantCulture); //win odd
+                                            runner.WinOdds = float.Parse(smallChunks[1], CultureInfo.InvariantCulture); //win odd
                                         }
                                         var inf = int.Parse(smallChunks[2]); //info (favourite, drop)
                                         runner.IsWinFavourite = inf == 1;
@@ -106,7 +105,7 @@ namespace XMLFeedParser.Parsers
                                         {
                                             if (smallChunks[1] != "SCR")
                                             {
-                                                runner.Placeodds = double.Parse(smallChunks[1], CultureInfo.InvariantCulture); //place odd
+                                                runner.Placeodds = float.Parse(smallChunks[1], CultureInfo.InvariantCulture); //place odd
                                             }
                                             var inf = int.Parse(smallChunks[2]); //info (favourite, drop)
                                             runner.IsPlaceFavourite = inf == 1;
@@ -172,10 +171,10 @@ namespace XMLFeedParser.Parsers
                                             switch (poolType)
                                             {
                                                 case "WIN":
-                                                    race.RaceWinPool = int.Parse(elem.Value);
+                                                    race.RaceWinPool = float.Parse(elem.Value, CultureInfo.InvariantCulture);
                                                     break;
                                                 case "PLA":
-                                                    race.RacePPPool = int.Parse(elem.Value);
+                                                    race.RacePPPool = float.Parse(elem.Value, CultureInfo.InvariantCulture);
                                                     break;
                                                 default:
                                                     //Log.Instance.Warn("Pool type not registered: " + poolType);

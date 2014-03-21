@@ -61,12 +61,16 @@ namespace XMLFeedParser.Model
         }
 
 
-        internal static void SetUpdateTime(List<Race> races)
+        internal static void SetUpdateTime(List<RaceStatus> races)
         {
+            var now = DateTime.UtcNow;
+
             var dtRaces = new DataTable();
             dtRaces.Columns.Add("MeetingId", typeof(int));
-            dtRaces.Columns.Add("RaceNumber", typeof(int));
-            races.ToList().ForEach(r => dtRaces.Rows.Add(r.MeetingId, r.RaceNumber));
+            dtRaces.Columns.Add("RaceNumber", typeof(short));
+            dtRaces.Columns.Add("Refreshinterval", typeof(int));
+            races.ToList().ForEach(r => dtRaces.Rows.Add(r.MeetingId, (short)r.RaceNumber, 
+                (r.NextRefreshUTC - now).TotalSeconds));
             
             using (var conn = new SqlConnection(ConfigValues.ConnectionString))
             {

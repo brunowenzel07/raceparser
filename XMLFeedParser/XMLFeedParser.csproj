@@ -97,6 +97,7 @@
   <ItemGroup>
     <Compile Include="Config\ConfigValues.cs" />
     <Compile Include="Log.cs" />
+    <Compile Include="Model\RaceStatus.cs" />
     <Compile Include="Model\_DBAccess\DBGateway.cs" />
     <Compile Include="Model\Meeting.cs" />
     <Compile Include="Model\RaceOdds.cs" />
@@ -107,7 +108,6 @@
     <Compile Include="Model\_DBAccess\DBGatewayHkjc.cs" />
     <Compile Include="Model\_DBAccess\DBGatewayTatts.cs" />
     <Compile Include="Parsers\HkjcParser.cs" />
-    <Compile Include="Parsers\Parser.Classes.cs" />
     <Compile Include="Parsers\Parser.cs" />
     <Compile Include="Parsers\ParserPool.cs" />
     <Compile Include="Config\ParserSection.cs" />

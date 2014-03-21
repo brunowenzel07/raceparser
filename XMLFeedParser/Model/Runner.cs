@@ -12,8 +12,8 @@ namespace XMLFeedParser.Model
         public int RaceNumber;
         public int HorseNumber;
         public bool isScratched;
-        public double WinOdds;
-        public double Placeodds;
+        public float WinOdds;
+        public float Placeodds;
     }
 
     public class RunnerTatts: Runner

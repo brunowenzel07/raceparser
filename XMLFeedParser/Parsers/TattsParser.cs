@@ -15,7 +15,7 @@ namespace XMLFeedParser.Parsers
 {
     class TattsParser : Parser
     {
-        protected override void parseRaces(IEnumerable<Parser.RaceStatus> racesToRetrieve, 
+        protected override void parseRaces(IEnumerable<RaceStatus> racesToRetrieve, 
             out List<Meeting> _meetings, out List<Race> _races, 
             out List<Runner> _runners, out List<RaceOdds> _odds)
         {

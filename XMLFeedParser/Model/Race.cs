@@ -12,6 +12,7 @@ namespace XMLFeedParser.Model
         public int RaceNumber;
         public string RaceStatus;
         public DateTime RaceJumpTimeUTC;
+        public int CurrentRefreshInterval;
     }
 
     public class RaceTatts: Race
@@ -24,8 +25,8 @@ namespace XMLFeedParser.Model
 
     public class RaceHKG: Race
     {
-        public double RaceWinPool;
-        public double RacePPPool;
+        public float RaceWinPool;
+        public float RacePPPool;
     }
 
 }

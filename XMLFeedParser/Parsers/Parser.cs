@@ -56,9 +56,6 @@ namespace XMLFeedParser.Parsers
 
                 refreshRaces(activeRaces);
 
-                //set next refresh
-                activeRaces.ForEach(r => setNextRefresh(r));
-
                 //th.Start();
                 //activeThreads.Add(th);
             }
@@ -71,8 +68,6 @@ namespace XMLFeedParser.Parsers
                 //all of them are refresh in one block (more performant)
                 refreshRaces(nonActiveRaces);
 
-                //set next refresh
-                nonActiveRaces.ForEach(r => setNextRefresh(r));
             }
 
             //wait until all threads are done
@@ -80,7 +75,7 @@ namespace XMLFeedParser.Parsers
         }
 
 
-        private void refreshRaces(IEnumerable<RaceStatus> racesToRefresh)
+        private void refreshRaces(List<RaceStatus> racesToRefresh)
         {
             List<Meeting> meetings = null;
             List<Race> races = null;
@@ -96,9 +91,6 @@ namespace XMLFeedParser.Parsers
                 parsed = true;
                 //insert/update them in the DB
                 updateRaces(meetings, races, runners, odds);
-
-                //store the update time in DB to synchronize with the web app
-                DBGateway.SetUpdateTime(races);
             }
             catch (Exception e)
             {
@@ -117,7 +109,7 @@ namespace XMLFeedParser.Parsers
                     r.MeetingId == memRace.MeetingId && r.RaceNumber == memRace.RaceNumber);
 
                 //if it couldn't be retrieved, we'll add delay til its next retrieval
-                if (rc == null)
+                if (rc == null || rc.RaceJumpTimeUTC == DateTime.MaxValue)
                 {
                     memRace.numErrors++;
                 }
@@ -142,67 +134,76 @@ namespace XMLFeedParser.Parsers
                     racesToNotify.Add(memRace);
             });
 
+            //set next refresh
+            setNextRefresh(racesToRefresh);
+
+            //store the update time in DB to synchronize with the web app
+            DBGateway.SetUpdateTime(racesToRefresh);
+
             if (racesToNotify.Count > 0)
                 sendErrorEmail(racesToNotify, ex);
         }
 
 
-        private void setNextRefresh(RaceStatus r)
+        private void setNextRefresh(IEnumerable<RaceStatus> races)
         {
-            if (!r.IsDone)
+            races.ToList().ForEach(r =>
             {
-                if (r.NextRefreshUTC == DateTime.MinValue) //first time retrieved
-                    r.NextRefreshUTC = DateTime.UtcNow;
-
-                //check if race is active
-                var active = r.ActiveTimeUTC <= DateTime.UtcNow;
-                var finishing = r.FinishingTimeUTC <= DateTime.UtcNow;
-                if (active) 
+                if (!r.IsDone)
                 {
-                    if (r.numErrors == 0)
+                    if (r.NextRefreshUTC == DateTime.MinValue) //first time retrieved
+                        r.NextRefreshUTC = DateTime.UtcNow;
+
+                    //check if race is active
+                    var active = r.ActiveTimeUTC <= DateTime.UtcNow;
+                    var finishing = r.FinishingTimeUTC <= DateTime.UtcNow;
+                    if (active)
                     {
-                        if (finishing) //last 5 minutes, decrese delay
+                        if (r.numErrors == 0)
                         {
-                            r.NextRefreshUTC = r.NextRefreshUTC.AddSeconds(ConfigValues.FinishingRefreshinterval);
+                            if (finishing) //last 5 minutes, decrese delay
+                            {
+                                r.NextRefreshUTC = r.NextRefreshUTC.AddSeconds(ConfigValues.FinishingRefreshinterval);
+                            }
+                            else
+                            {
+                                r.NextRefreshUTC = r.NextRefreshUTC.AddSeconds(ConfigValues.ActiveRefreshInterval);
+                                //if it is after MorningLine-25, set to MorningLine-25
+                                if (r.NextRefreshUTC > r.FinishingTimeUTC)
+                                    r.NextRefreshUTC = r.FinishingTimeUTC;
+                            }
                         }
-                        else
+                        else //there was an error, increase delay with the number of errors
                         {
-                            r.NextRefreshUTC = r.NextRefreshUTC.AddSeconds(ConfigValues.ActiveRefreshInterval);
+                            r.NextRefreshUTC = r.NextRefreshUTC.AddSeconds(r.numErrors);
+                        }
+                    }
+                    else
+                    {
+                        if (r.numErrors == 0)
+                        {
+                            r.NextRefreshUTC = r.NextRefreshUTC.AddSeconds(ConfigValues.InactiveRefreshInterval);
                             //if it is after MorningLine-25, set to MorningLine-25
-                            if (r.NextRefreshUTC > r.FinishingTimeUTC)
-                                r.NextRefreshUTC = r.FinishingTimeUTC;
+                            if (r.NextRefreshUTC > r.ActiveTimeUTC)
+                                r.NextRefreshUTC = r.ActiveTimeUTC;
+                        }
+                        else //there was an error, increase delay with the number of errors
+                        {
+                            r.NextRefreshUTC = r.NextRefreshUTC.AddSeconds(r.numErrors * r.numErrors * ConfigValues.DelayIfErrorSec);
                         }
                     }
-                    else //there was an error, increase delay with the number of errors
-                    {
-                        r.NextRefreshUTC = r.NextRefreshUTC.AddSeconds(r.numErrors);
-                    }
-                }
-                else
-                {
-                    if (r.numErrors == 0)
-                    {
-                        r.NextRefreshUTC = r.NextRefreshUTC.AddSeconds(ConfigValues.InactiveRefreshInterval);
-                        //if it is after MorningLine-25, set to MorningLine-25
-                        if (r.NextRefreshUTC > r.ActiveTimeUTC)
-                            r.NextRefreshUTC = r.ActiveTimeUTC;
-                    }
-                    else //there was an error, increase delay with the number of errors
-                    {
-                        r.NextRefreshUTC = r.NextRefreshUTC.AddSeconds(r.numErrors * r.numErrors * ConfigValues.DelayIfErrorSec);
-                    }
-                }
 
-                Log.Instance.Debug("Next refresh of {0}{1} set for {2}{3}",
-                    r.MeetingCode, r.RaceNumber, r.NextRefreshUTC.ToLongTimeString(), 
-                    active ? (finishing ? " [FINISHING]" : " [ACTIVE]") : 
-                    r.NotInitialized ? " [NOT INITIALIZED - numErrors=" + r.numErrors + "] " : 
-                    " [INACTIVE until " + r.ActiveTimeUTC + "]");
-            }
-            else //is Done
-            {
-                Log.Instance.Debug("Race {0}{1} is DONE -> no more refresh", r.MeetingCode, r.RaceNumber);
-            }
+                    Log.Instance.Debug("Next refresh of {0}{1} set for {2}{3}",
+                        r.MeetingCode, r.RaceNumber, r.NextRefreshUTC.ToLongTimeString(),
+                        active ? (finishing ? " [FINISHING]" : " [ACTIVE]") :
+                        r.NotInitialized ? " [NOT INITIALIZED - numErrors=" + r.numErrors + "] " :
+                        " [INACTIVE until " + r.ActiveTimeUTC + "]");
+                }
+                else //is Done
+                {
+                    Log.Instance.Debug("Race {0}{1} is DONE -> no more refresh", r.MeetingCode, r.RaceNumber);
+                }
+            });
         }
 
 
@@ -217,11 +218,12 @@ namespace XMLFeedParser.Parsers
 
                 dbMeetings.ForEach(db =>
                 {
-                    var memMeeting = racesStatus.FirstOrDefault(mem => mem.MeetingId == db.MeetingId);
-                    if (memMeeting == null)
+                    //it is a new meeting --> add all its races
+                    for (int i = 0; i < db.NumberOfRaces; i++)
                     {
-                        //it is a new meeting --> add all its races
-                        for (int i = 0; i < db.NumberOfRaces; i++)
+                        var raceNum = i+1;
+                        var memRace = racesStatus.FirstOrDefault(mem => mem.MeetingId == db.MeetingId && mem.RaceNumber == raceNum);
+                        if (memRace == null)
                         {
                             //create one entry per race
                             racesStatus.Add(new RaceStatus
@@ -230,8 +232,17 @@ namespace XMLFeedParser.Parsers
                                 MeetingCode = db.MeetingCode,
                                 DateUTC = db.MeetingDate,
                                 AUS_StateId = db.AUS_StateId,
-                                RaceNumber = i + 1
+                                RaceNumber = raceNum
                             });
+                        }
+                        else
+                        {
+                            //update existing entry
+                            //memRace.MeetingId = db.MeetingId;
+                            memRace.MeetingCode = db.MeetingCode;
+                            memRace.DateUTC = db.MeetingDate;
+                            memRace.AUS_StateId = db.AUS_StateId;
+                            //memRace.RaceNumber = raceNum;
                         }
                     }
                 });
@@ -292,10 +303,11 @@ namespace XMLFeedParser.Parsers
 
                 racesToNotify.ForEach(r =>
                     {
-                        msg.AppendFormat("<li>MeetingDate: {0}<br/>MeetingId: {1}<br/>RaceNo: {2}<br/>MeetingCode: {3}<br/>AUS_StateId: {4}</li>", 
+                        msg.AppendFormat("<li>MeetingDate: {0}<br/>MeetingId: {1}<br/>RaceNo: {2}<br/>MeetingCode: {3}<br/>AUS_StateId: {4}<br/>Jump time (UTC): {5}</li>", 
                             r.DateUTC.ToShortDateString(), r.MeetingId, r.RaceNumber, 
                             r.MeetingCode ?? "<b>NULL <===</b>", 
-                            r.AUS_StateId != 0 ? r.AUS_StateId.ToString() : "<b>0 <===</b>");
+                            r.AUS_StateId != 0 ? r.AUS_StateId.ToString() : "<b>0 <===</b>",
+                            r.JumpTimeUTC != DateTime.MaxValue ? r.JumpTimeUTC.ToShortTimeString() : "<b>NOT SET</b> <===");
                     });
 
                 msg.Append("</ul>");
