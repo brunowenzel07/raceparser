@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
 using System.Linq;
+using XMLFeedParser.Config;
 
 namespace XMLFeedParser.Model
 {
@@ -38,5 +39,15 @@ namespace XMLFeedParser.Model
             TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(winRegEntries[AUS_StateId]);
             return TimeZoneInfo.ConvertTimeToUtc(dt, tz);
         }
+
+        public static TimeSpan MelbourneToUTC(TimeSpan ts)
+        {
+            var utcNow = DateTime.UtcNow;
+            DateTime dt = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 
+                                       ts.Hours, ts.Minutes, ts.Seconds);
+            TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(ConfigValues.MelbourneStandardTime);
+            return TimeZoneInfo.ConvertTimeToUtc(dt, tz).TimeOfDay;
+        }
+
     }
 }

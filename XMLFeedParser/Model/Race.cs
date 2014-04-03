@@ -20,7 +20,9 @@ namespace XMLFeedParser.Model
         public string RaceName;
         public string DistanceName;
         public int TrackRating;
-        public bool isTrackChanged; 
+        public bool isTrackChanged;
+        public int NumberOfRunners;
+        public DateTime LocalJumpTime;
     }
 
     public class RaceHKG: Race

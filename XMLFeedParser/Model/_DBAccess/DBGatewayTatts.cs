@@ -52,18 +52,31 @@ namespace XMLFeedParser.Model
         private static void createTattsDataTables(IEnumerable<Meeting> meetings, IEnumerable<RaceTatts> races, IEnumerable<RunnerTatts> runners, IEnumerable<RaceOdds> odds,
             out DataTable _dtMeetings, out DataTable _dtRaces, out DataTable _dtRunners, out DataTable _dtOdds)
         {
+            if (meetings == null)
+                meetings = new List<Meeting>();
+            if (races == null)
+                races = new List<RaceTatts>();
+            if (runners == null)
+                runners = new List<RunnerTatts>();
+            if (odds == null)
+                odds = new List<RaceOdds>();
+
             //MEETINGS
             var dtMeetings = new DataTable();
             dtMeetings.Columns.Add("MeetingId", typeof(int));
             dtMeetings.Columns.Add("isAbandoned", typeof(bool));
             dtMeetings.Columns.Add("RaceDayDate", typeof(DateTime));
             dtMeetings.Columns.Add("VenueName", typeof(string));
+            dtMeetings.Columns.Add("NumberOfRaces", typeof(int));
+            dtMeetings.Columns.Add("MeetingCode", typeof(string));
 
             meetings.ToList().ForEach(m => dtMeetings.Rows.Add(
                 m.MeetingId,
                 m.isAbandoned,
                 m.MeetingDate,
-                m.RacecourseName));
+                m.RacecourseName,
+                m.NumberOfRaces, //TODO
+                m.MeetingCode)); //TODO
 
             _dtMeetings = dtMeetings;
 
@@ -78,6 +91,8 @@ namespace XMLFeedParser.Model
             dtRaces.Columns.Add("TrackRating", typeof(int));
             dtRaces.Columns.Add("isTrackChanged", typeof(bool));
             dtRaces.Columns.Add("RaceStatus", typeof(string));
+            dtRaces.Columns.Add("NumberOfRunners", typeof(int));
+            dtRaces.Columns.Add("LocalJumpTime", typeof(DateTime));
 
             races.ToList().ForEach(r => dtRaces.Rows.Add(
                 r.MeetingId,
@@ -87,7 +102,9 @@ namespace XMLFeedParser.Model
                 r.DistanceName,
                 r.TrackRating,
                 r.isTrackChanged,
-                r.RaceStatus));
+                r.RaceStatus,
+                r.NumberOfRunners,
+                r.LocalJumpTime));
 
             _dtRaces = dtRaces;
 

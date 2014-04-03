@@ -58,17 +58,22 @@ namespace XMLFeedParser.Parsers
                             string currentRaceStatus;
                             var meetElem = doc.Root.Element("Meeting");
                             var raceElem = meetElem.Element("Race");
+                            var runnerElems = raceElem.Elements("Runner");
                             {
+
+                                var dtLocal = (DateTime)raceElem.Attribute("RaceTime");
                                 var aux = new RaceTatts
                                 {
                                     MeetingId = currentRace.MeetingId,
                                     RaceNumber = currentRace.RaceNumber,
-                                    RaceJumpTimeUTC = TimeZoneHelper.ToUTC((DateTime)raceElem.Attribute("RaceTime"), currentRace.AUS_StateId),
+                                    RaceJumpTimeUTC = TimeZoneHelper.ToUTC(dtLocal, currentRace.AUS_StateId),
                                     RaceName = (string)raceElem.Attribute("RaceName"),
                                     DistanceName = (string)raceElem.Attribute("Distance"),
                                     TrackRating = (int)raceElem.Attribute("TrackRating"),
                                     isTrackChanged = (string)raceElem.Attribute("TrackChanged") == ConfigValues.YES,
-                                    RaceStatus = currentRaceStatus = (string)raceElem.Attribute("RaceDisplayStatus")
+                                    RaceStatus = currentRaceStatus = (string)raceElem.Attribute("RaceDisplayStatus"),
+                                    NumberOfRunners = runnerElems.Count(),
+                                    LocalJumpTime = dtLocal
                                 };
                                 lock (races)
                                 { 
@@ -88,7 +93,8 @@ namespace XMLFeedParser.Parsers
                                         MeetingId = currentRace.MeetingId,
                                         isAbandoned = (string)meetElem.Attribute("MtgAbandoned") == ConfigValues.YES,
                                         RacecourseName = (string)meetElem.Attribute("VenueName"),
-                                        MeetingDate = currentRace.DateUTC
+                                        MeetingDate = currentRace.DateUTC,
+                                        MeetingCode = (string)meetElem.Attribute("MeetingCode")
                                     };
                                     //lock (meetings)
                                     {
@@ -104,37 +110,42 @@ namespace XMLFeedParser.Parsers
 
                             //parse each runner elem
                             {
-                                int horseNo;
-                                var aux = raceElem.Elements("Runner").Select(
+
+                                //save runners' places to be set later
+                                var places = new Dictionary<int, int>();
+                                raceElem.Elements("ResultPlace").ToList().ForEach(result =>
+                                {
+                                    int place = (int)result.Attribute("PlaceNo");
+                                    int runnerNo = (int)result.Element("Result").Attribute("RunnerNo");
+                                    places.Add(runnerNo, place);
+                                });
+
+                                var aux = runnerElems.Select(
                                     runnerElem =>
                                     {
+                                        int horseNo = (int)runnerElem.Attribute("RunnerNo");
+                                        var place = 0;
+                                        places.TryGetValue(horseNo, out place);
                                         var winOddsElem = runnerElem.Element("WinOdds"); //may be null when the meeting has been adandoned
                                         var placeOddsElem = runnerElem.Element("PlaceOdds"); //may be null when the meeting has been adandoned
+
                                         return new RunnerTatts
                                         {
                                             MeetingId = currentRace.MeetingId,
                                             RaceNumber = currentRace.RaceNumber,
-                                            HorseNumber = horseNo = (int)runnerElem.Attribute("RunnerNo"),
+                                            HorseNumber = horseNo,
                                             HorseName = (string)runnerElem.Attribute("RunnerName"),
                                             JockeyName = (string)runnerElem.Attribute("Rider"),
                                             Barrier = (string)runnerElem.Attribute("Barrier"),
                                             AUS_HcpWt = (string)runnerElem.Attribute("Weight"),
                                             isScratched = (string)runnerElem.Attribute("Scratched") == ConfigValues.YES,
                                             isJockeyChanged = (string)runnerElem.Attribute("RiderChanged") == ConfigValues.YES,
-                                            //Place is to be set later
+                                            Place = place,
                                             WinOdds = winOddsElem != null ? (float)winOddsElem.Attribute("Odds") : 0,
                                             Placeodds = placeOddsElem != null ? (float)placeOddsElem.Attribute("Odds") : 0,
                                             IsFavourite = horseNo == fav
                                         };
                                     });
-
-                                //set runners' place, if available
-                                raceElem.Elements("ResultPlace").ToList().ForEach(result =>
-                                {
-                                    int place = (int)result.Attribute("PlaceNo");
-                                    int runnerNo = (int)result.Element("Result").Attribute("RunnerNo");
-                                    aux.First(r => r.HorseNumber == runnerNo).Place = place;
-                                });
 
                                 lock (runners)
                                 {
@@ -144,7 +155,7 @@ namespace XMLFeedParser.Parsers
 
 
                             //Odds are only to be parsed when the race is done
-                            if (currentRaceStatus == ConfigValues.RaceStatusDone)
+                            //if (currentRaceStatus == ConfigValues.RaceStatusDone)
                             {
                                 var aux = new RaceOdds();
                                 aux.MeetingId = currentRace.MeetingId;
@@ -153,10 +164,14 @@ namespace XMLFeedParser.Parsers
 
                                 raceElem.Elements("Pool").ToList().ForEach(oddsElem =>
                                     {
-                                        var poolTotal = (float)oddsElem.Attribute("PoolTotal");
+                                        //var poolStatus = (string)oddsElem.Attribute("PoolDisplayStatus");
+
+                                        float poolTotal = 0;
+                                        if (oddsElem.Attribute("PoolTotal") != null)
+                                            poolTotal = (float)oddsElem.Attribute("PoolTotal");
                                         
                                         float divAmount = 0;
-                                        if ((string)oddsElem.Attribute("PoolDisplayStatus") != ConfigValues.RaceStatusAbandoned)
+                                        if (oddsElem.Element("Dividend") != null)
                                             divAmount = (float)oddsElem.Element("Dividend").Attribute("DivAmount");
                                         
                                         switch ((string)oddsElem.Attribute("PoolType"))

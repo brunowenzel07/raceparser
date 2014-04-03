@@ -70,7 +70,7 @@ namespace XMLFeedParser.Model
             dtRaces.Columns.Add("RaceNumber", typeof(short));
             dtRaces.Columns.Add("Refreshinterval", typeof(int));
             races.ToList().ForEach(r => dtRaces.Rows.Add(r.MeetingId, (short)r.RaceNumber, 
-                (r.NextRefreshUTC - now).TotalSeconds));
+                r.IsDone ? -1 : (r.NextRefreshUTC - now).TotalSeconds));
             
             using (var conn = new SqlConnection(ConfigValues.ConnectionString))
             {

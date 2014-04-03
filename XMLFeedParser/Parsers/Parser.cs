@@ -8,13 +8,13 @@ using XMLFeedParser.Model;
 
 namespace XMLFeedParser.Parsers
 {
-    abstract partial class Parser
+    abstract class Parser: IParser
     {
-        public string BaseUrl;
+        public string BaseUrl { get; set; }
 
-        public string Name;
+        public string Name { get; set; }
 
-        public string CountryCode;
+        public string CountryCode { get; set; }
 
         private List<RaceStatus> racesStatus = new List<RaceStatus>();
 
@@ -303,11 +303,11 @@ namespace XMLFeedParser.Parsers
 
                 racesToNotify.ForEach(r =>
                     {
-                        msg.AppendFormat("<li>MeetingDate: {0}<br/>MeetingId: {1}<br/>RaceNo: {2}<br/>MeetingCode: {3}<br/>AUS_StateId: {4}<br/>Jump time (UTC): {5}</li>", 
+                        msg.AppendFormat("<li>MeetingDate: {0}<br/>MeetingId: {1}<br/>RaceNo: {2}<br/>MeetingCode: {3}<br/>AUS_StateId: {4}<br/>Jump time: {5}</li>", 
                             r.DateUTC.ToShortDateString(), r.MeetingId, r.RaceNumber, 
                             r.MeetingCode ?? "<b>NULL <===</b>", 
                             r.AUS_StateId != 0 ? r.AUS_StateId.ToString() : "<b>0 <===</b>",
-                            r.JumpTimeUTC != DateTime.MaxValue ? r.JumpTimeUTC.ToShortTimeString() : "<b>NOT SET</b> <===");
+                            r.JumpTimeUTC != DateTime.MaxValue ? r.JumpTimeUTC.ToShortTimeString() + "UTC" : "<b>NOT SET</b> <===");
                     });
 
                 msg.Append("</ul>");

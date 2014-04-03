@@ -7,6 +7,7 @@ namespace XMLFeedParser.Config
         public const string RaceStatusAlive = "SELLING";
         public const string RaceStatusDone = "PAYING";
         public const string RaceStatusAbandoned = "ABANDONED";
+        public const string MelbourneStandardTime = "AUS Eastern Standard Time";
 
         public static readonly string ConnectionString = ConfigurationManager.ConnectionStrings["RaceDayDB"].ConnectionString;
 
@@ -23,11 +24,13 @@ namespace XMLFeedParser.Config
 
         public static readonly string AdminEmails = ConfigurationManager.AppSettings["AdminEmails"];
 
+        public static readonly string RaceDayUpdateTimes = ConfigurationManager.AppSettings["RaceDayUpdateTimes"];
+
         public const string YES = "Y";
 
         public const int DelayIfErrorSec = 10;
 
         public static int NumErrorsToSendEmail = 10;
-        public static int NumErrorsToSendEmail2 = 50;
+        public static int NumErrorsToSendEmail2 = 30;
     }
 }

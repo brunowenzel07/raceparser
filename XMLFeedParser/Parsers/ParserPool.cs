@@ -20,7 +20,7 @@ namespace XMLFeedParser.Parsers
 
         public void Add(string name, string className, string baseUrl, string countryCode)
         {
-            Parser p = (Parser)Activator.CreateInstance(Type.GetType(className));
+            IParser p = (IParser)Activator.CreateInstance(Type.GetType(className));
             p.Name = name;
             p.BaseUrl = baseUrl;
             p.CountryCode = countryCode;
@@ -30,7 +30,7 @@ namespace XMLFeedParser.Parsers
             thread.Start();
         }
 
-        static void ThreadJob(Parser p)
+        static void ThreadJob(IParser p)
         {
             var sleepTime = ConfigValues.ThreadsSleepTime;
             var numErrors = 0;

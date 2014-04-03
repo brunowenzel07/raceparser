@@ -12,5 +12,7 @@ namespace XMLFeedParser.Model
         public bool isAbandoned;
         public DateTime MeetingDate;
         public string RacecourseName;
+        public int NumberOfRaces;
+        public string MeetingCode;
     }
 }
