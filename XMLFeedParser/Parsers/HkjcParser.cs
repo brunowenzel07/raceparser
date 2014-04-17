@@ -205,7 +205,7 @@ namespace XMLFeedParser.Parsers
 
 
                 var nextRace = -1;
-                var scratched = new Dictionary<int, int>();
+                var scratched = new Dictionary<int, List<int>>();
 
                 //THREAD 1: SCRATCHED
                 var th1 = new Thread(() =>
@@ -234,7 +234,14 @@ namespace XMLFeedParser.Parsers
                             {
                                 var race = int.Parse(smallChunks[0]); //race no
                                 var runner = int.Parse(smallChunks[1]); //runner no
-                                scratched.Add(race, runner);
+                                
+                                List<int> scRunners;
+                                if (!scratched.TryGetValue(race, out scRunners))
+                                {
+                                    scRunners = new List<int>();
+                                    scratched.Add(race, scRunners);
+                                }
+                                scRunners.Add(runner);
                             }
                             else
                             {
@@ -260,8 +267,11 @@ namespace XMLFeedParser.Parsers
 
                 foreach (var pair in scratched)
                 {
-                    if (runners.Exists(r => r.RaceNumber == pair.Key && r.HorseNumber == pair.Value))
-                        runners.Find(r => r.RaceNumber == pair.Key && r.HorseNumber == pair.Value).isScratched = true;
+                    foreach (var scRunner in pair.Value)
+                    {
+                        if (runners.Exists(r => r.RaceNumber == pair.Key && r.HorseNumber == scRunner))
+                            runners.Find(r => r.RaceNumber == pair.Key && r.HorseNumber == scRunner).isScratched = true;
+                    }
                 }
 
                 races.FindAll(r => r.RaceNumber < nextRace).ForEach(r => r.RaceStatus = ConfigValues.RaceStatusDone);
