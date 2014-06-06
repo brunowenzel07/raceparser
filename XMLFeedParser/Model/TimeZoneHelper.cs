@@ -20,7 +20,13 @@ namespace XMLFeedParser.Model
             var codes = DBGateway.GetTimeZones();
 
             winRegEntries = new Dictionary<int, string>();
-            codes.ToList().ForEach(c => winRegEntries.Add(c.Key, config[c.Value]));
+            codes.ToList().ForEach(c =>
+            {
+                string timeZoneCode;
+                if (!config.TryGetValue(c.Value, out timeZoneCode))
+                    throw new Exception("TimeZone code " + c.Value + " not found on TimeZones.config");
+                winRegEntries.Add(c.Key, timeZoneCode);
+            });
         }
 
         private static Dictionary<string, string> loadConfigFile()
