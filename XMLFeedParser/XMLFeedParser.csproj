@@ -138,7 +138,9 @@
       <SubType>Designer</SubType>
     </Content>
     <None Include="build.bat" />
-    <None Include="install.bat" />
+    <None Include="install.bat">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="NLog.xsd">
       <SubType>Designer</SubType>
     </None>
