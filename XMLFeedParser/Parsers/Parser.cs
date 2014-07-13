@@ -94,7 +94,19 @@ namespace XMLFeedParser.Parsers
             }
             catch (Exception e)
             {
-                Log.Instance.ErrorException(Name + ": failed to " + (parsed ? "update" : "parse") + " races", e);
+                StringBuilder msg = new StringBuilder();
+                msg.Append(Name + " failed to " + (parsed ? "UPDATE" : "PARSE") + " races: ");
+
+                int numRaces = racesToRefresh.Count;
+                if (numRaces > 0)
+                {   
+                    var firstRace = racesToRefresh[0];
+                    msg.AppendFormat("MeetingId={0}, DateUTC={1}, MeetingCode={2}, AUS_StateId={3}, NumRaces={4}",
+                        firstRace.MeetingId, firstRace.DateUTC, firstRace.MeetingCode, firstRace.AUS_StateId, numRaces);
+                }
+                
+
+                Log.Instance.ErrorException(msg.ToString(), e);
                 racesToRefresh.ToList().ForEach(memRace => memRace.numErrors++);
                 ex = e;
             }
