@@ -42,7 +42,10 @@ namespace XMLFeedParser.Model
 
         public static DateTime ToUTC(DateTime dt, int AUS_StateId)
         {
-            TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(winRegEntries[AUS_StateId]);
+            string aux;
+            if (!winRegEntries.TryGetValue(AUS_StateId, out aux))
+                throw new Exception("No config found for AUS_StateId " + AUS_StateId);
+            TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(aux);
             return TimeZoneInfo.ConvertTimeToUtc(dt, tz);
         }
 

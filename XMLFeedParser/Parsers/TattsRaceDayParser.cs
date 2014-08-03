@@ -110,14 +110,19 @@ namespace XMLFeedParser.Parsers
                     //parse meeting elem
                     foreach (var meetElem in doc.Root.Elements("Meeting"))
                     {
-                        meetings.Add(new Meeting
+                        var meetingCode = (string)meetElem.Attribute("MeetingCode");
+                        //filter trots and greyhounds
+                        if (!meetingCode.EndsWith("G") && !meetingCode.EndsWith("T"))
                         {
-                            isAbandoned = (string)meetElem.Attribute("MtgAbandoned") == ConfigValues.YES,
-                            RacecourseName = (string)meetElem.Attribute("VenueName"),
-                            MeetingDate = date,
-                            NumberOfRaces = meetElem.Elements("Race").Count(),
-                            MeetingCode = (string)meetElem.Attribute("MeetingCode")
-                        });
+                            meetings.Add(new Meeting
+                            {
+                                isAbandoned = (string)meetElem.Attribute("MtgAbandoned") == ConfigValues.YES,
+                                RacecourseName = (string)meetElem.Attribute("VenueName"),
+                                MeetingDate = date,
+                                NumberOfRaces = meetElem.Elements("Race").Count(),
+                                MeetingCode = meetingCode
+                            });
+                        }
                     }
 
                     Log.Instance.Debug(Name + ": successfully parsed " + url);
