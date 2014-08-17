@@ -95,16 +95,86 @@ namespace XMLFeedParser.Parsers
             catch (Exception e)
             {
                 StringBuilder msg = new StringBuilder();
-                msg.Append(Name + " failed to " + (parsed ? "UPDATE" : "PARSE") + " races: ");
 
-                int numRaces = racesToRefresh.Count;
-                if (numRaces > 0)
-                {   
-                    var firstRace = racesToRefresh[0];
-                    msg.AppendFormat("MeetingId={0}, DateUTC={1}, MeetingCode={2}, AUS_StateId={3}, NumRaces={4}",
-                        firstRace.MeetingId, firstRace.DateUTC, firstRace.MeetingCode, firstRace.AUS_StateId, numRaces);
+                if (!parsed)
+                {
+                    msg.AppendLine(Name + " failed to PARSE the following data: ");
+                    msg.AppendFormat("Races ({0}): [MeetingId, DateUTC, MeetingCode, AUS_StateId, RaceNumber]{1}", racesToRefresh.Count, Environment.NewLine);
+                    foreach (var r in racesToRefresh)
+                    {
+                        msg.AppendFormat("[{0}, {1}, {2}, {3}, {4}]{5}",
+                            r.MeetingId, r.DateUTC, r.MeetingCode, r.AUS_StateId, r.RaceNumber, Environment.NewLine);
+                    }
                 }
-                
+                else
+                {
+                    msg.AppendLine(Name + " failed to UPDATE following data: ");
+                    
+                    //meetings
+                    if (meetings != null)
+                    {
+                        msg.AppendFormat("Meetings ({0}): [MeetingId, isAbandoned, MeetingDate, RacecourseName, NumberOfRaces, MeetingCode]{1}",
+                            meetings.Count, Environment.NewLine);
+                        meetings.ForEach(m =>
+                            {
+                                msg.AppendFormat("[{0}, {1}, {2}, {3}, {4}, {5}]{6}",
+                                    m.MeetingId, m.isAbandoned, m.MeetingDate, m.RacecourseName, m.NumberOfRaces, m.MeetingCode, Environment.NewLine);
+                            });
+                    }
+                    else
+                    {
+                        msg.AppendLine("Meetings: NULL");
+                    }
+
+                    //races
+                    if (races != null)
+                    {
+                        msg.AppendFormat("Races ({0}): [MeetingId, RaceNumber, RaceStatus, RaceJumpTimeUTC, CurrentRefreshInterval]{1}",
+                            races.Count, Environment.NewLine);
+                        races.ForEach(r =>
+                        {
+                            msg.AppendFormat("[{0}, {1}, {2}, {3}, {4}]{5}",
+                                r.MeetingId, r.RaceNumber, r.RaceStatus, r.RaceJumpTimeUTC, r.CurrentRefreshInterval, Environment.NewLine);
+                        });
+                    }
+                    else
+                    {
+                        msg.AppendLine("Races: NULL");
+                    }
+
+                    //runners
+                    if (runners != null)
+                    {
+                        msg.AppendFormat("Runners ({0}): [MeetingId, RaceNumber, HorseNumber, isScratched, WinOdds, Placeodds]{1}",
+                            runners.Count, Environment.NewLine);
+                        runners.ForEach(r =>
+                        {
+                            msg.AppendFormat("[{0}, {1}, {2}, {3}, {4}, {5}]{6}",
+                                r.MeetingId, r.RaceNumber, r.HorseNumber, r.isScratched, r.WinOdds, r.Placeodds, Environment.NewLine);
+                        });
+                    }
+                    else
+                    {
+                        msg.AppendLine("Runners: NULL");
+                    }
+
+                    //odds
+                    if (odds != null)
+                    {
+                        msg.AppendFormat("odds ({0}): [MeetingId, RaceNumber, RaceStatus] (pool and div values excluded){1}",
+                            odds.Count, Environment.NewLine);
+                        odds.ForEach(o =>
+                        {
+                            msg.AppendFormat("[{0}, {1}, {2}]{3}",
+                                o.MeetingId, o.RaceNumber, o.RaceStatus, Environment.NewLine);
+                        });
+                    }
+                    else
+                    {
+                        msg.AppendLine("Odds: NULL");
+                    }
+                }
+
 
                 Log.Instance.ErrorException(msg.ToString(), e);
                 racesToRefresh.ToList().ForEach(memRace => memRace.numErrors++);
